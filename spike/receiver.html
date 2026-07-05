@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>mbus spike — receiver</title>
+<style>
+  body { font: 14px/1.5 monospace; margin: 2rem; background: #111; color: #ddd; }
+  button { font: inherit; padding: .5rem 1rem; margin: .2rem; }
+  .ok { color: #7c7; } .bad { color: #c77; }
+  #meter { width: 300px; height: 14px; background: #222; margin: 1rem 0; }
+  #meter div { height: 100%; width: 0; background: #7c7; }
+</style>
+<h1>mbus spike — receiver</h1>
+<p>Subscribes to a published source and plays it. Click a source to listen.</p>
+<div id="sources">(no sources yet)</div>
+<div id="meter"><div></div></div>
+<pre id="log"></pre>
+<script type="module">
+  import { createMbusClient } from '../packages/mbus-client/dist/index.js'
+
+  const log = (line, cls = '') => {
+    const el = document.getElementById('log')
+    el.innerHTML += cls ? `<span class="${cls}">${line}</span>\n` : line + '\n'
+  }
+
+  const client = createMbusClient()
+  client.onState((s) => log(`bridge: ${s}`, s === 'connected' ? 'ok' : s === 'bridge-too-old' ? 'bad' : ''))
+  client.connect()
+  window.__mbus = client
+  window.__rms = 0
+
+  client.onSources((sources) => {
+    const el = document.getElementById('sources')
+    el.innerHTML = sources.length ? '' : '(no sources)'
+    for (const s of sources) {
+      const b = document.createElement('button')
+      b.textContent = `▶ ${s.name} (${s.sourceId})`
+      b.onclick = () => listen(s.sourceId)
+      el.appendChild(b)
+    }
+  })
+
+  function listen(sourceId) {
+    const ctx = new AudioContext()
+    const sub = client.subscribe(sourceId, ctx)
+    sub.onState((s) => log(`subscription ${sourceId}: ${s}`, s === 'live' ? 'ok' : s === 'failed' ? 'bad' : ''))
+    sub.node.connect(ctx.destination)
+
+    // Level meter — also the programmatic proof that audio is flowing.
+    const analyser = new AnalyserNode(ctx, { fftSize: 2048 })
+    sub.node.connect(analyser)
+    const buf = new Float32Array(analyser.fftSize)
+    const meter = document.querySelector('#meter div')
+    const loop = () => {
+      analyser.getFloatTimeDomainData(buf)
+      let sum = 0
+      for (const v of buf) sum += v * v
+      const rms = Math.sqrt(sum / buf.length)
+      window.__rms = rms
+      meter.style.width = `${Math.min(100, rms * 300)}%`
+      requestAnimationFrame(loop)
+    }
+    loop()
+    window.__sub = sub
+    window.__ctx = ctx
+  }
+</script>

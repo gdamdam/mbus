@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>mbus spike — sender</title>
+<style>
+  body { font: 14px/1.5 monospace; margin: 2rem; background: #111; color: #ddd; }
+  button { font: inherit; padding: .5rem 1rem; }
+  .ok { color: #7c7; } .bad { color: #c77; }
+</style>
+<h1>mbus spike — sender</h1>
+<p>Publishes a 220 Hz tone as <code>spike-tone</code> via the bridge.</p>
+<button id="start">start tone + publish</button>
+<pre id="log"></pre>
+<script type="module">
+  import { createMbusClient } from '../packages/mbus-client/dist/index.js'
+
+  const log = (line, cls = '') => {
+    const el = document.getElementById('log')
+    el.innerHTML += cls ? `<span class="${cls}">${line}</span>\n` : line + '\n'
+  }
+
+  const client = createMbusClient()
+  client.onState((s) => log(`bridge: ${s}`, s === 'connected' ? 'ok' : s === 'bridge-too-old' ? 'bad' : ''))
+  client.connect()
+
+  document.getElementById('start').onclick = () => {
+    const ctx = new AudioContext()
+    const osc = new OscillatorNode(ctx, { frequency: 220, type: 'sine' })
+    const gain = new GainNode(ctx, { gain: 0.3 })
+    osc.connect(gain)
+    osc.start()
+
+    const pub = client.publishOutput(gain, 'spike-tone')
+    pub.onState((s) => log(`publication: ${s} (sourceId=${pub.getSourceId()})`, s === 'announced' ? 'ok' : ''))
+    log('tone running; waiting for subscribers')
+
+    // Hooks for automated verification
+    window.__mbus = client
+    window.__pub = pub
+    window.__ctx = ctx
+  }
+</script>

@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>mbus spike — loopback latency</title>
+<style>
+  body { font: 14px/1.5 monospace; margin: 2rem; background: #111; color: #ddd; }
+  button { font: inherit; padding: .5rem 1rem; }
+  .ok { color: #7c7; } .bad { color: #c77; }
+</style>
+<h1>mbus spike — loopback latency</h1>
+<p>
+  Two mbus clients in one page share an AudioContext (one clock domain), so
+  publisher → bridge-signaled WebRTC → subscriber latency is measured
+  directly: an impulse is scheduled at a known context time and an
+  AudioWorklet stamps the context time of its arrival on the subscribed node.
+  The number includes encode, transport, decode, and the receive jitter
+  buffer — the whole path a musician hears.
+</p>
+<button id="run">run measurement</button>
+<button id="codecs">dump codec capabilities</button>
+<pre id="log"></pre>
+<script type="module">
+  import { createMbusClient } from '../packages/mbus-client/dist/index.js'
+
+  const logEl = document.getElementById('log')
+  const log = (line, cls = '') => {
+    logEl.innerHTML += cls ? `<span class="${cls}">${line}</span>\n` : line + '\n'
+  }
+
+  const DETECTOR = `
+    class Detector extends AudioWorkletProcessor {
+      constructor() {
+        super()
+        this.armed = false
+        this.port.onmessage = (e) => { if (e.data === 'arm') this.armed = true }
+      }
+      process(inputs) {
+        const ch = inputs[0] && inputs[0][0]
+        if (this.armed && ch) {
+          for (let i = 0; i < ch.length; i++) {
+            if (Math.abs(ch[i]) > 0.05) {
+              this.port.postMessage(currentTime + i / sampleRate)
+              this.armed = false
+              break
+            }
+          }
+        }
+        return true
+      }
+    }
+    registerProcessor('mbus-detector', Detector)
+  `
+
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+  const waitFor = (check, ms = 10000) =>
+    new Promise((resolve, reject) => {
+      const t0 = performance.now()
+      const poll = () => {
+        const v = check()
+        if (v) return resolve(v)
+        if (performance.now() - t0 > ms) return reject(new Error('timeout'))
+        setTimeout(poll, 50)
+      }
+      poll()
+    })
+
+  document.getElementById('run').onclick = async () => {
+    try {
+      const ctx = new AudioContext()
+      log(`sampleRate: ${ctx.sampleRate}`)
+
+      const pubClient = createMbusClient()
+      const subClient = createMbusClient()
+      pubClient.connect()
+      subClient.connect()
+      await waitFor(() => pubClient.getState() === 'connected' && subClient.getState() === 'connected')
+      log('both clients connected', 'ok')
+
+      // Publish a gain node we can inject impulses into.
+      const sendBus = new GainNode(ctx, { gain: 1 })
+      const pub = pubClient.publishOutput(sendBus, 'loopback')
+      await waitFor(() => pub.getSourceId())
+      log(`published loopback as ${pub.getSourceId()}`, 'ok')
+
+      const sub = subClient.subscribe(pub.getSourceId(), ctx)
+      await waitFor(() => sub.getState() === 'live')
+      log('subscription live', 'ok')
+
+      // Impulse detector on the received audio.
+      const url = URL.createObjectURL(new Blob([DETECTOR], { type: 'text/javascript' }))
+      await ctx.audioWorklet.addModule(url)
+      const detector = new AudioWorkletNode(ctx, 'mbus-detector')
+      sub.node.connect(detector)
+      // A worklet only runs while the graph pulls it; its output stays
+      // silent (we never write outputs), so this is inaudible.
+      detector.connect(ctx.destination)
+
+      // Let the receive jitter buffer settle before measuring — the first
+      // ~second after `live` gets time-warped (accelerate/expand) and can
+      // swallow a transient entirely.
+      await sleep(1500)
+
+      // One impulse: 5 ms of full scale, scheduled at a known context time.
+      const impulse = ctx.createBuffer(1, Math.floor(ctx.sampleRate / 200), ctx.sampleRate)
+      impulse.getChannelData(0).fill(1)
+
+      const trial = () =>
+        new Promise((resolve) => {
+          const timer = setTimeout(() => resolve(null), 3000) // missed impulse
+          detector.port.onmessage = (e) => {
+            const dt = e.data - t0
+            if (dt <= 0) {
+              // Spurious: something (a startup pop, an earlier tail) crossed
+              // the threshold before our impulse could have arrived. Re-arm.
+              detector.port.postMessage('arm')
+              return
+            }
+            clearTimeout(timer)
+            resolve(dt)
+          }
+          detector.port.postMessage('arm')
+          const src = new AudioBufferSourceNode(ctx, { buffer: impulse })
+          src.connect(sendBus)
+          const t0 = ctx.currentTime + 0.1
+          src.start(t0)
+        })
+
+      const results = []
+      let missed = 0
+      for (let i = 0; i < 10; i++) {
+        const s = await trial()
+        if (s === null) {
+          missed++
+          log(`trial ${i + 1}: impulse not detected`, 'bad')
+        } else {
+          results.push(s * 1000)
+          log(`trial ${i + 1}: ${(s * 1000).toFixed(1)} ms`)
+        }
+        await sleep(300)
+      }
+      if (missed) log(`${missed}/10 impulses missed`, 'bad')
+      if (!results.length) throw new Error('no impulse detected in 10 trials')
+      results.sort((a, b) => a - b)
+      const median = results[Math.floor(results.length / 2)]
+      log(`one-way latency ms — min ${results[0].toFixed(1)}, median ${median.toFixed(1)}, max ${results[results.length - 1].toFixed(1)}`, 'ok')
+      window.__results = { sampleRate: ctx.sampleRate, ms: results, median }
+    } catch (err) {
+      log(`FAILED: ${err.message}`, 'bad')
+      window.__results = { error: err.message }
+    }
+  }
+
+  document.getElementById('codecs').onclick = async () => {
+    // What can WebRTC audio actually negotiate in this browser?
+    const caps = RTCRtpSender.getCapabilities('audio')
+    log('RTCRtpSender.getCapabilities("audio"):')
+    for (const c of caps.codecs) {
+      log(`  ${c.mimeType}  ${c.clockRate}Hz ch=${c.channels ?? '-'} ${c.sdpFmtpLine ?? ''}`)
+    }
+    const hasL16 = caps.codecs.some((c) => /L16/i.test(c.mimeType))
+    log(hasL16 ? 'L16 IS advertised' : 'L16 is NOT advertised', hasL16 ? 'ok' : 'bad')
+
+    // Evidence from a real offer, and an attempt to force L16 by munging.
+    const ctx = new AudioContext()
+    const dest = ctx.createMediaStreamDestination()
+    const pc = new RTCPeerConnection()
+    for (const t of dest.stream.getAudioTracks()) pc.addTrack(t, dest.stream)
+    const offer = await pc.createOffer()
+    const audioLines = offer.sdp.split('\r\n').filter((l) => l.startsWith('m=audio') || l.startsWith('a=rtpmap'))
+    log('offer m=audio / rtpmap lines:')
+    for (const l of audioLines) log(`  ${l}`)
+
+    const munged = offer.sdp
+      .replace(/m=audio (\d+) ([A-Z/]+) .*/, 'm=audio $1 $2 96')
+      .split('\r\n').filter((l) => !l.startsWith('a=rtpmap') && !l.startsWith('a=fmtp') && !l.startsWith('a=rtcp-fb'))
+      .join('\r\n')
+      .replace(/(m=audio.*)/, '$1\r\na=rtpmap:96 L16/48000/2')
+    try {
+      await pc.setLocalDescription({ type: 'offer', sdp: munged })
+      log('munged L16-only offer ACCEPTED by setLocalDescription', 'ok')
+    } catch (err) {
+      log(`munged L16-only offer REJECTED: ${err.message}`, 'bad')
+    }
+    pc.close()
+    window.__codecs = { codecs: caps.codecs.map((c) => c.mimeType), hasL16, audioLines }
+  }
+</script>
