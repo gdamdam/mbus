@@ -1,3 +1,10 @@
 node_modules/
 dist/
+dist-ssr/
+coverage/
+.claude/settings.local.json
+*.local
 .DS_Store
+.vite/
+node_modules/.tmp/
+*.tsbuildinfo

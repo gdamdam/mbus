@@ -1,0 +1,390 @@
+/*
+ * App.css — the mbus "signal desk" shell + all component styling.
+ * Layout: header (fixed) · matrix (scrolls) · master monitor (pinned footer).
+ * Loaded before global.css helpers in the bundle; keeps its own shell classes.
+ */
+
+.app {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--sp-4);
+  gap: var(--sp-4);
+}
+
+/* ---------------------------------------------------------------- header -- */
+.app__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding-bottom: var(--sp-3);
+  border-bottom: var(--line-w) solid var(--line);
+}
+
+.app__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.app__mark {
+  width: 40px;
+  height: 40px;
+  display: block;
+}
+
+.app__title {
+  font-size: var(--fs-title);
+  letter-spacing: -0.01em;
+}
+
+.app__tagline {
+  font-size: var(--fs-xs);
+  color: var(--haze);
+  letter-spacing: 0.02em;
+}
+
+/* ---------------------------------------------------------- bridge status -- */
+.bridge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-3);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-sm);
+  color: var(--haze);
+  white-space: nowrap;
+}
+
+.bridge-status__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--haze-dim);
+  flex: none;
+}
+
+.bridge-status[data-tone='live'] {
+  color: var(--bone);
+}
+.bridge-status[data-tone='live'] .bridge-status__dot {
+  background: var(--live);
+  box-shadow: 0 0 0 3px var(--live-wash);
+}
+.bridge-status[data-tone='arm'] .bridge-status__dot {
+  background: var(--arm);
+}
+.bridge-status[data-tone='danger'] {
+  color: var(--danger);
+}
+.bridge-status[data-tone='danger'] .bridge-status__dot {
+  background: var(--danger);
+}
+
+/* ---------------------------------------------------------------- matrix -- */
+.app__matrix {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.matrix {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+/* ----------------------------------------------------------- channel strip -- */
+.strip {
+  background: var(--slate-2);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--sp-3) var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  transition: border-color var(--t-med) var(--ease-out);
+}
+
+.strip[data-enabled='true'] {
+  border-color: var(--live-dim);
+}
+
+.strip[data-present='false'] {
+  opacity: 0.78;
+}
+
+.strip__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.strip__id {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.strip__name {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--bone);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.strip__meta {
+  font-size: var(--fs-xs);
+  color: var(--haze-dim);
+}
+
+.strip__state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--haze);
+  white-space: nowrap;
+}
+
+.strip__state-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--haze-dim);
+}
+.strip__state[data-tone='live'] {
+  color: var(--live);
+}
+.strip__state[data-tone='live'] .strip__state-dot {
+  background: var(--live);
+}
+.strip__state[data-tone='arm'] {
+  color: var(--arm);
+}
+.strip__state[data-tone='arm'] .strip__state-dot {
+  background: var(--arm);
+}
+.strip__state[data-tone='danger'] {
+  color: var(--danger);
+}
+.strip__state[data-tone='danger'] .strip__state-dot {
+  background: var(--danger);
+}
+
+.strip__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+}
+
+/* ------------------------------------------------------------------ meter -- */
+.meter {
+  position: relative;
+  flex: 1;
+  height: 12px;
+  border-radius: var(--radius-xs);
+  background: var(--meter-bg);
+  border: var(--line-w) solid var(--line);
+  overflow: hidden;
+}
+
+.meter__fill {
+  position: absolute;
+  inset: 0;
+  clip-path: inset(0 100% 0 0);
+  background: linear-gradient(
+    to right,
+    var(--meter-lo) 0%,
+    var(--meter-lo) 55%,
+    var(--meter-mid) 80%,
+    var(--meter-hi) 100%
+  );
+  will-change: clip-path;
+}
+
+.meter__peak {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  left: 0;
+  background: var(--bone);
+  opacity: 0.7;
+}
+
+/* ------------------------------------------------------------------ fader -- */
+.fader {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex: none;
+  width: 220px;
+}
+
+.fader[data-disabled='true'] {
+  opacity: 0.5;
+}
+
+.fader__input {
+  flex: 1;
+  accent-color: var(--live);
+  cursor: pointer;
+}
+
+.fader__value {
+  font-size: var(--fs-sm);
+  color: var(--bone);
+  min-width: 4.5ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.fader__unit {
+  color: var(--haze-dim);
+}
+
+/* ----------------------------------------------------------------- toggle -- */
+.toggle {
+  flex: none;
+}
+
+.toggle__track {
+  display: block;
+  width: 40px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  background: var(--raise);
+  border: var(--line-w) solid var(--line);
+  position: relative;
+  transition: background var(--t-fast) var(--ease-out);
+}
+
+.toggle__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--haze);
+  transition: transform var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out);
+}
+
+.toggle[data-on='true'] .toggle__track {
+  background: var(--live-dim);
+  border-color: var(--live);
+}
+
+.toggle[data-on='true'] .toggle__thumb {
+  transform: translateX(16px);
+  background: var(--live);
+}
+
+.toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ------------------------------------------------------------------ empty -- */
+.empty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--sp-3);
+  padding: var(--sp-8) var(--sp-4);
+  color: var(--haze);
+}
+
+.empty__title {
+  font-size: var(--fs-title);
+  color: var(--bone);
+}
+
+.empty__body {
+  max-width: 42ch;
+  font-size: var(--fs-body);
+}
+
+.empty__hint {
+  margin-top: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--haze-dim);
+  background: var(--slate);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-2) var(--sp-3);
+}
+
+/* ----------------------------------------------------------------- master -- */
+.app__footer {
+  border-top: var(--line-w) solid var(--line);
+  padding-top: var(--sp-3);
+}
+
+.master {
+  background: var(--slate);
+  border: var(--line-w) solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--sp-3) var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.master__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.master__count {
+  font-size: var(--fs-xs);
+  color: var(--haze);
+}
+
+.master__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+}
+
+.master__mute {
+  flex: none;
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--radius-sm);
+  border: var(--line-w) solid var(--line);
+  color: var(--haze);
+  font-size: var(--fs-sm);
+  transition: color var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out);
+}
+
+.master__mute[data-muted='true'] {
+  color: var(--danger);
+  border-color: var(--danger-dim);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
+/* ----------------------------------------------------------- small screens -- */
+@media (max-width: 560px) {
+  .strip__controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--sp-2);
+  }
+  .fader {
+    width: 100%;
+  }
+  .master__controls {
+    flex-wrap: wrap;
+  }
+}

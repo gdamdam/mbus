@@ -1,0 +1,48 @@
+name: Deploy to GitHub Pages
+
+# Build the Vite app and publish dist/ to GitHub Pages on every push to main.
+# Served at https://mbus.mpump.live — the custom domain is held by public/CNAME,
+# which Vite copies into dist/ so the artifact-based deploy preserves it across
+# deploys (no gh-pages branch).
+#
+# One-time setup:
+#   repo → Settings → Pages → Source: "GitHub Actions"
+#   add DNS: CNAME  mbus → <owner>.github.io   (per your DNS provider)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  # false, not true: cancelling an in-flight Pages deployment makes
+  # deploy-pages fail with "Deployment failed, try again later".
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+      - id: deployment
+        uses: actions/deploy-pages@v4

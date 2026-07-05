@@ -1,0 +1,33 @@
+mbus
+Copyright (C) 2026 Giovanni Damiola
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version. See the LICENSE file for the full text.
+
+--------------------------------------------------------------------------------
+Derived code and attribution
+--------------------------------------------------------------------------------
+
+mbus is part of the *mpump* family of local-first browser instruments by the
+same author. All sibling projects are licensed AGPL-3.0-or-later, and the code
+reused here is reused under AGPL-3.0-or-later with attribution within the same
+author and suite. The following portions are derived from sibling projects:
+
+* Build tooling, the PWA service worker + precache strategy, and the
+  Vite / TypeScript / ESLint configuration patterns — derived from **mkeys**
+  (vite.config.ts precache manifest plugin, public/sw.js, the tsconfig split,
+  eslint.config.js, and the theme-token / global-CSS structure).
+
+* The README structure (badges, ASCII architecture diagram, scripts table,
+  manual QA checklist, repository map, Family section) follows the shared
+  m-suite README template, of which **mkeys** is the current reference.
+
+The mbus-client library (packages/mbus-client) is original to this repository
+(built in phase 1) and is the seed of a future shared `mcore`; the app consumes
+its public API unmodified.
+
+These derivations were confirmed by the suite lead. Because every source project
+is AGPL-3.0-or-later by the same author, the reuse is covered by that license;
+this NOTICE records the lineage for attribution and transparency.

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="mbus">
+  <rect width="512" height="512" rx="96" fill="#0c0e12" />
+  <!-- Patch cable: a source jack (left) routed to a destination jack (right),
+       the one saturated element — the live signal. -->
+  <path
+    d="M144 176 C 232 176, 280 336, 368 336"
+    fill="none"
+    stroke="#46d6b4"
+    stroke-width="26"
+    stroke-linecap="round"
+  />
+  <circle cx="144" cy="176" r="46" fill="#0c0e12" stroke="#46d6b4" stroke-width="22" />
+  <circle cx="368" cy="336" r="46" fill="#0c0e12" stroke="#46d6b4" stroke-width="22" />
+</svg>

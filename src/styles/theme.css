@@ -1,0 +1,148 @@
+/*
+ * mbus theme tokens — the "signal desk" identity.
+ *
+ * mbus is a patchbay + monitor: a technical control surface, not a playable
+ * instrument. The hero is the signal — sources flowing into a monitor. Chrome
+ * is a calm graphite console; the one saturated element is the LIVE signal
+ * (a patch-cable teal) and the metering. Deliberately not the mkeys spectral
+ * surface and not a default neon-SaaS look. Every value is consumed via
+ * var(--token). Self-hosted fonts only (no CDN — offline + privacy-safe).
+ */
+:root {
+  color-scheme: dark;
+
+  /* ---- Type roles ------------------------------------------------------- *
+   * Space Grotesk: all UI labels/controls. Space Mono: every live readout —
+   * source ids, dB, meter values, counts — monospace reads as instrument-grade.
+   * Faces are @fontsource-imported in main.tsx. */
+  --font-ui: 'Space Grotesk Variable', 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* ---- Surfaces — cool graphite console, graded by elevation ------------ */
+  --ink: #0c0e12; /* app background — the deepest */
+  --slate: #12161c; /* base panel */
+  --slate-2: #171d25; /* raised panel / channel strip */
+  --raise: #1e2630; /* controls / hover surfaces */
+  --line: #242e39; /* hairline borders */
+  --line-soft: #1a212a; /* faint internal dividers */
+
+  /* ---- Text — cool bone, never pure white ------------------------------ */
+  --bone: #e6ecf2;
+  --haze: #8493a3; /* dimmed labels */
+  --haze-dim: #586675; /* faint / secondary numerics */
+
+  /* ---- Signal accents --------------------------------------------------- *
+   * --live: the patch-cable teal — a connection carrying audio. --arm: amber,
+   * a connection negotiating / announcing. --danger: a failed/removed path.
+   * These are semantic, not decorative: colour == connection state. */
+  --live: #46d6b4;
+  --live-dim: #2b7d6b;
+  --arm: #e8b45a;
+  --arm-dim: #8a6c37;
+  --danger: #e2664a;
+  --danger-dim: #8a4335;
+
+  /* Soft washes for rings + fills, derived so callers don't hand-mix rgba. */
+  --live-glow: color-mix(in srgb, var(--live) 40%, transparent);
+  --live-wash: color-mix(in srgb, var(--live) 12%, transparent);
+  --arm-wash: color-mix(in srgb, var(--arm) 12%, transparent);
+
+  /* ---- Meter ramp — standard audio green → amber → red ------------------ */
+  --meter-lo: #46d6b4;
+  --meter-mid: #e8b45a;
+  --meter-hi: #e2664a;
+  --meter-bg: #0a0d11;
+
+  /* ---- Type scale ------------------------------------------------------- */
+  --fs-display: clamp(1.9rem, 1.3rem + 2.6vw, 2.7rem);
+  --fs-title: 1.25rem;
+  --fs-lg: 1.05rem;
+  --fs-body: 0.95rem;
+  --fs-ui: 0.85rem;
+  --fs-sm: 0.78rem;
+  --fs-xs: 0.7rem;
+  --fs-eyebrow: 0.66rem;
+
+  --lh-tight: 1.05;
+  --lh-snug: 1.25;
+  --lh-body: 1.5;
+
+  --ls-eyebrow: 0.11em;
+
+  /* ---- Spacing scale ---------------------------------------------------- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+
+  /* ---- Radii ------------------------------------------------------------ */
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 5px;
+  --radius-pill: 999px;
+
+  /* ---- Geometry --------------------------------------------------------- */
+  --touch: 40px;
+  --gap: 12px;
+  --line-w: 1px;
+
+  /* ---- Shadows / elevation --------------------------------------------- */
+  --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --focus-ring: 0 0 0 2px var(--ink), 0 0 0 4px var(--live);
+
+  /* ---- Motion — short, functional; a monitor, not a toy ---------------- */
+  --t-fast: 90ms;
+  --t-med: 160ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --t-fast: 0.01ms;
+    --t-med: 0.01ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+:where(h1, h2, h3, h4) {
+  margin: 0;
+  font-weight: 600;
+  line-height: var(--lh-snug);
+}
+
+:where(p) {
+  margin: 0;
+  line-height: var(--lh-body);
+}
+
+:where(a) {
+  color: var(--live);
+  text-decoration: none;
+}
+
+:where(a:hover) {
+  text-decoration: underline;
+}
+
+:where(code, kbd, samp) {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+::selection {
+  background: var(--live-wash);
+  color: var(--bone);
+}
