@@ -1,7 +1,7 @@
 {
   "name": "mbus",
   "private": true,
-  "version": "0.2.5",
+  "version": "0.2.6",
   "license": "AGPL-3.0-or-later",
   "description": "The m-suite audio patchbay. Discover, patch and monitor live tab-to-tab audio between browser instruments.",
   "type": "module",
