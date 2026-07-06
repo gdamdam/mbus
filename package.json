@@ -1,7 +1,7 @@
 {
   "name": "mbus",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.2.2",
   "license": "AGPL-3.0-or-later",
   "description": "The m-suite audio patchbay. Discover, patch and monitor live tab-to-tab audio between browser instruments.",
   "type": "module",
@@ -13,6 +13,8 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "check": "npm run typecheck && npm run lint && npm run test && npm run build",
+    "vendored:check": "node scripts/sync-vendored.mjs --check",
+    "vendored:sync": "node scripts/sync-vendored.mjs --sync",
     "preview": "vite preview"
   },
   "dependencies": {
