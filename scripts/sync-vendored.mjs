@@ -18,7 +18,7 @@ import { copyFileSync, existsSync, readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const SIBLINGS = ['mfx', 'mchord', 'mkeys', 'mdrone', 'mgrains', 'mvox']
+const SIBLINGS = ['mfx', 'mchord', 'mkeys', 'mdrone', 'mgrains', 'mvox', 'mtape']
 const FILES = ['client.ts', 'protocol.ts']
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
