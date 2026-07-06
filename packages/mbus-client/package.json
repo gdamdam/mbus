@@ -1,6 +1,6 @@
 {
   "name": "mbus-client",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Tab-to-tab WebRTC audio for the m-suite, signaled through the link-bridge companion. Dependency-free, framework-agnostic.",
   "license": "AGPL-3.0-or-later",
   "type": "module",

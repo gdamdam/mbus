@@ -155,6 +155,28 @@ describe('connection lifecycle', () => {
     expect(s.closed).toBe(true)
   })
 
+  it('keeps retrying after bridge-too-old and recovers when a welcome arrives', () => {
+    // Background-tab timer throttling can process the hello timeout after a
+    // welcome that already arrived on the wire, so too-old must be retryable —
+    // a false positive recovers on the next attempt, a genuinely old bridge
+    // just re-reports.
+    vi.useFakeTimers()
+    const h = makeHarness({ helloTimeoutMs: 2000, retryMs: 5000, autoRetry: true })
+    h.client.connect()
+    const s0 = h.sockets[0]!
+    s0.serverOpen()
+    vi.advanceTimersByTime(2000)
+    expect(h.client.getState()).toBe('bridge-too-old')
+    expect(s0.closed).toBe(true)
+    // The informative state survives the retry wait instead of degrading.
+    expect(h.client.getState()).toBe('bridge-too-old')
+    vi.advanceTimersByTime(5000)
+    const s1 = h.sockets[1]!
+    s1.serverOpen()
+    s1.serverSend(WELCOME)
+    expect(h.client.getState()).toBe('connected')
+  })
+
   it('sweeps to the next URL when the socket constructor throws', () => {
     let calls = 0
     const good = new FakeSocket()
