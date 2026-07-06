@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createMbusClient, type PeerConnectionLike, type WebSocketLike } from './client.js'
+import { createMbusClient, tuneOpusSdp, type PeerConnectionLike, type WebSocketLike } from './client.js'
 
 /** Flush pending microtasks + macrotask so async signal handlers settle. */
 const tick = () => new Promise((r) => setTimeout(r, 0))
@@ -410,5 +410,78 @@ describe('subscribing', () => {
     pc.connectionState = 'failed'
     pc.onconnectionstatechange?.()
     expect(sub.getState()).toBe('failed')
+  })
+})
+
+describe('opus SDP tuning', () => {
+  const OPUS_SDP = [
+    'v=0',
+    'o=- 1 1 IN IP4 127.0.0.1',
+    's=-',
+    'm=audio 9 UDP/TLS/RTP/SAVPF 111 63',
+    'a=rtpmap:111 opus/48000/2',
+    'a=fmtp:111 minptime=10;useinbandfec=1',
+    'a=rtpmap:63 red/48000/2',
+    '',
+  ].join('\r\n')
+
+  it('appends the tuning params to an existing opus fmtp line', () => {
+    const out = tuneOpusSdp(OPUS_SDP)
+    const fmtp = out.split('\r\n').find((l) => l.startsWith('a=fmtp:111'))
+    expect(fmtp).toContain('minptime=10')
+    expect(fmtp).toContain('useinbandfec=1')
+    expect(fmtp).toContain('maxaveragebitrate=510000')
+    expect(fmtp).toContain('stereo=1')
+    expect(fmtp).toContain('sprop-stereo=1')
+    expect(fmtp).toContain('cbr=1')
+    // Only the opus payload is touched.
+    expect(out.split('\r\n').some((l) => l.startsWith('a=fmtp:63'))).toBe(false)
+  })
+
+  it('inserts an fmtp line after rtpmap when none exists', () => {
+    const sdp = 'm=audio 9 RTP/AVP 96\r\na=rtpmap:96 opus/48000/2\r\na=sendrecv\r\n'
+    const lines = tuneOpusSdp(sdp).split('\r\n')
+    expect(lines[1]).toBe('a=rtpmap:96 opus/48000/2')
+    expect(lines[2]).toBe('a=fmtp:96 maxaveragebitrate=510000;stereo=1;sprop-stereo=1;cbr=1')
+  })
+
+  it('never overrides a param that is already set', () => {
+    const sdp = 'a=rtpmap:111 opus/48000/2\r\na=fmtp:111 stereo=0;cbr=0\r\n'
+    const fmtp = tuneOpusSdp(sdp).split('\r\n')[1]
+    expect(fmtp).toContain('stereo=0')
+    expect(fmtp).not.toContain('stereo=1;')
+    expect(fmtp).toContain('cbr=0')
+    expect(fmtp).toContain('maxaveragebitrate=510000')
+    expect(fmtp).toContain('sprop-stereo=1')
+  })
+
+  it('is idempotent and leaves non-opus SDP untouched', () => {
+    const once = tuneOpusSdp(OPUS_SDP)
+    expect(tuneOpusSdp(once)).toBe(once)
+    const plain = 'v=0\r\na=rtpmap:8 PCMA/8000\r\n'
+    expect(tuneOpusSdp(plain)).toBe(plain)
+  })
+
+  it('publisher offers carry the tuned SDP (setLocalDescription and the wire agree)', async () => {
+    const h = makeHarness({
+      peerConnectionFactory: () => {
+        const pc = new FakePc()
+        pc.createOffer = () => Promise.resolve({ type: 'offer', sdp: OPUS_SDP })
+        h.pcs.push(pc)
+        return pc
+      },
+    })
+    const s = handshake(h)
+    h.client.publishOutput(fakeAudioGraph().node, 'tone')
+    s.serverSend({ type: 'mbus/announced', sourceId: 's1', name: 'tone' })
+    s.serverSend({ type: 'mbus/request', sourceId: 's1', from: 'c9' })
+    await tick()
+    const pc = h.pcs[0]!
+    expect(pc.localDesc?.sdp).toContain('maxaveragebitrate=510000')
+    const wire = s.sentJson().find((m) => (m as { payload?: { kind?: string } }).payload?.kind === 'offer') as {
+      payload: { sdp: string }
+    }
+    expect(wire.payload.sdp).toContain('cbr=1')
+    expect(wire.payload.sdp).toBe(pc.localDesc?.sdp)
   })
 })
