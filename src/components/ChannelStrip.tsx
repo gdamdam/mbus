@@ -29,9 +29,10 @@ interface ChannelStripProps {
   row: ChannelRow
   onToggle(name: string, on: boolean): void
   onDb(name: string, db: number): void
+  onSolo(name: string, on: boolean): void
 }
 
-export function ChannelStrip({ row, onToggle, onDb }: ChannelStripProps) {
+export function ChannelStrip({ row, onToggle, onDb, onSolo }: ChannelStripProps) {
   const waiting = row.enabled && !row.present
   const tone = waiting ? 'arm' : STATE_TONE[row.subState]
   const stateLabel = waiting ? 'waiting for publisher' : STATE_LABEL[row.subState]
@@ -55,6 +56,17 @@ export function ChannelStrip({ row, onToggle, onDb }: ChannelStripProps) {
           <span className="strip__state-dot" />
           {stateLabel}
         </span>
+        <button
+          type="button"
+          className="strip__solo mono"
+          data-on={row.soloed}
+          aria-pressed={row.soloed}
+          aria-label={`Solo ${row.name}`}
+          title="solo"
+          onClick={() => onSolo(row.name, !row.soloed)}
+        >
+          S
+        </button>
       </div>
       <div className="strip__controls">
         <Meter analyser={row.analyser} label={`${row.name} level`} />

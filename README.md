@@ -12,9 +12,9 @@
      └────────────────────────────────────────▶  ▮▮▮▯▯ 🔊
 </pre>
 
-[![version](https://img.shields.io/badge/version-0.1.0-46d6b4)](./package.json)
+[![version](https://img.shields.io/badge/version-0.2.0-46d6b4)](./package.json)
 [![license](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue)](./LICENSE)
-[![tests](https://img.shields.io/badge/tests-20%20passing-2ea043)](#verification)
+[![tests](https://img.shields.io/badge/tests-51%20passing-2ea043)](#verification)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)](./tsconfig.json)
 [![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=white)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-8-646cff?logo=vite&logoColor=white)](https://vite.dev)
@@ -35,6 +35,9 @@
 - **Patch matrix → monitor** — enable any source to subscribe to it; each connection has its own **dB fader** and **level meter**, and everything sums into a **master monitor** (mute + master fader + master meter) out to your speakers.
 - **Re-wire by name** — subscriptions are keyed by the source's *name*, not its ephemeral connection id. Reload the publishing instrument and `mbus` automatically re-subscribes to the same-named source when it comes back — no re-patching.
 - **Graceful without the bridge** — with no link-bridge running, `mbus` shows a clear empty state with a one-line start pointer and keeps retrying in the background; it connects the moment the bridge appears.
+- **Patch memory** — enabled channels, fader positions, and the master fader/mute are remembered per source *name* in `localStorage` and re-applied on load; the first click or keypress resumes audio (autoplay policy) and the saved patch re-wires itself as sources appear.
+- **Solo + clip** — per-channel **solo** (soloing routes everything else out of the master, after the meter tap, so all meters keep moving) and a latching **clip LED** on every meter; the master monitor shows a live/total channel count.
+- **Monitor capture** — record the master monitor and save it as a **16-bit PCM WAV**, entirely in the browser (an `AudioWorklet` tap; nothing is uploaded anywhere).
 - **Peer-to-peer, local-first** — audio is a direct WebRTC connection between browser tabs (host candidates only, no STUN/TURN). No relay, no cloud, no audio ever leaves your machine.
 - **Installable PWA** — offline after one visit, local-first, no account.
 
@@ -89,15 +92,19 @@ The `mbus-client` library lives in `packages/mbus-client` and has its own gate (
 ## Verification
 
 ```bash
-npm run check   # typecheck + lint + 20 tests + production build
+npm run check   # typecheck + lint + 51 tests + production build
 ```
 
-Tests are deterministic and live next to the code: the dB/level math (`patchbay/level.ts`) and the re-wire-by-name **reconciliation** policy (`patchbay/reconcile.ts` — publisher restart, publisher death, duplicate names, enable/disable). Vitest runs in a Node environment, so **live audio and RTC behaviour are covered by a manual QA checklist**, not unit tests:
+Tests are deterministic and live next to the code: the dB/level math (`patchbay/level.ts`), the re-wire-by-name **reconciliation** policy (`patchbay/reconcile.ts` — publisher restart, publisher death, duplicate names, enable/disable), the store's enable/solo/persistence sequencing (`patchbay/patchbayStore.ts`, via injected client/audio doubles), the patch (de)serialization (`patchbay/persist.ts`), and the WAV encoder (`patchbay/wav.ts`). Vitest runs in a Node environment, so **live audio and RTC behaviour are covered by a manual QA checklist**, not unit tests:
 
 - [ ] **Discovery** — publish a source from an instrument (or `spike/sender.html`); it appears as a channel; unpublish and it disappears.
 - [ ] **Patch + monitor** — enable a channel; audio reaches the master monitor; the channel and master meters move.
 - [ ] **Per-channel gain** — the fader changes that channel's contribution; master fader + mute affect the sum.
 - [ ] **Re-wire by name** — reload the publishing instrument; the same-named channel re-subscribes automatically without re-patching.
+- [ ] **Patch memory** — reload `mbus`; enabled channels and fader positions come back, and audio resumes on the first click.
+- [ ] **Solo** — soloing one channel silences the others in the monitor while every meter keeps moving; clearing it restores the mix.
+- [ ] **Clip LED** — drive a hot signal; the meter's right-edge LED latches red and decays after ~1.5 s.
+- [ ] **WAV capture** — record the monitor, stop, and the downloaded `.wav` plays back what was heard.
 - [ ] **Bridge absent** — with no bridge, the empty state + start pointer show; starting the bridge connects automatically.
 - [ ] **Bridge too old** — a pre-mbus bridge is detected (2 s timeout) and reported, not spun on.
 - [ ] **PWA** — installs, and the shell loads offline after the first visit (the monitor still needs the bridge + peers).
@@ -129,11 +136,14 @@ src/
   main.tsx              entry, service-worker registration, font imports
   App.tsx / App.css     patchbay shell + component styling
   patchbay/             the core (framework-light)
-    patchbayStore.ts    external store: owns the client, audio graph, subscriptions
+    patchbayStore.ts    external store: owns the client, audio graph, subscriptions (tested)
     usePatchbay.ts      thin useSyncExternalStore binding
-    audioGraph.ts       channel gain → master monitor, AnalyserNode meter taps
+    audioGraph.ts       channel gain → solo route → master monitor, AnalyserNode meter taps
     reconcile.ts        pure re-wire-by-name policy (tested)
     level.ts            pure dB / meter math (tested)
+    persist.ts          pure patch (de)serialization for localStorage (tested)
+    wav.ts              pure 16-bit PCM WAV encoder, adapted from mtape (tested)
+    recorder.ts         AudioWorklet monitor capture + WAV download
     types.ts            render-facing contracts
   components/           BridgeStatus · ChannelStrip · MasterMonitor · EmptyState
     ui/                 Meter · Fader · Toggle

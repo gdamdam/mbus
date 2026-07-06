@@ -22,6 +22,8 @@ const ANALYSER_FFT = 1024
 interface ChannelNodes {
   gain: GainNode
   analyser: AnalyserNode
+  /** Post-meter on/off stage (solo policy) — meters stay live while routed out. */
+  route: GainNode
 }
 
 export interface PatchbayAudio {
@@ -33,7 +35,12 @@ export interface PatchbayAudio {
   addChannel(sourceId: string, node: AudioNode): AnalyserNode
   removeChannel(sourceId: string): void
   setChannelGain(sourceId: string, linear: number): void
+  /** Route the channel into (true) or out of (false) the master sum, after the
+   *  meter tap — a solo'd mix keeps every channel's meter moving. */
+  setChannelAudible(sourceId: string, audible: boolean): void
   masterAnalyser(): AnalyserNode | null
+  /** The summed master bus (post-fader, post-mute) — the capture tap point. */
+  masterBus(): AudioNode | null
   setMasterGain(linear: number): void
   setMuted(muted: boolean): void
   close(): void
@@ -81,10 +88,12 @@ export function createPatchbayAudio(): PatchbayAudio {
       const gain = ctx.createGain()
       const analyser = ctx.createAnalyser()
       analyser.fftSize = ANALYSER_FFT
+      const route = ctx.createGain()
       node.connect(gain)
       gain.connect(analyser)
-      gain.connect(master)
-      channels.set(sourceId, { gain, analyser })
+      gain.connect(route)
+      route.connect(master)
+      channels.set(sourceId, { gain, analyser, route })
       return analyser
     },
 
@@ -94,6 +103,7 @@ export function createPatchbayAudio(): PatchbayAudio {
       try {
         ch.gain.disconnect()
         ch.analyser.disconnect()
+        ch.route.disconnect()
       } catch {
         /* graph may already be torn down */
       }
@@ -105,7 +115,14 @@ export function createPatchbayAudio(): PatchbayAudio {
       if (ch && ctx) ch.gain.gain.setTargetAtTime(linear, ctx.currentTime, 0.01)
     },
 
+    setChannelAudible(sourceId, audible): void {
+      const ch = channels.get(sourceId)
+      if (ch && ctx) ch.route.gain.setTargetAtTime(audible ? 1 : 0, ctx.currentTime, 0.01)
+    },
+
     masterAnalyser: () => masterMeter,
+
+    masterBus: () => master,
 
     setMasterGain(linear): void {
       masterLinear = linear

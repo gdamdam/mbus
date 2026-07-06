@@ -14,8 +14,17 @@ import { MasterMonitor } from './components/MasterMonitor'
 import { usePatchbay } from './patchbay/usePatchbay'
 
 export default function App() {
-  const { bridgeState, channels, master, setEnabled, setChannelDb, setMasterDb, setMuted } =
-    usePatchbay()
+  const {
+    bridgeState,
+    channels,
+    master,
+    setEnabled,
+    setChannelDb,
+    setSolo,
+    setMasterDb,
+    setMuted,
+    setRecording,
+  } = usePatchbay()
 
   return (
     <div className="app">
@@ -36,14 +45,25 @@ export default function App() {
         ) : (
           <div className="matrix">
             {channels.map((row) => (
-              <ChannelStrip key={row.name} row={row} onToggle={setEnabled} onDb={setChannelDb} />
+              <ChannelStrip
+                key={row.name}
+                row={row}
+                onToggle={setEnabled}
+                onDb={setChannelDb}
+                onSolo={setSolo}
+              />
             ))}
           </div>
         )}
       </main>
 
       <footer className="app__footer">
-        <MasterMonitor master={master} onDb={setMasterDb} onMuted={setMuted} />
+        <MasterMonitor
+          master={master}
+          onDb={setMasterDb}
+          onMuted={setMuted}
+          onRecording={setRecording}
+        />
       </footer>
     </div>
   )

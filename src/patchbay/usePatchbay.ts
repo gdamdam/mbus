@@ -13,8 +13,10 @@ import { createPatchbayStore, type PatchbaySnapshot } from './patchbayStore'
 export interface Patchbay extends PatchbaySnapshot {
   setEnabled(name: string, enabled: boolean): void
   setChannelDb(name: string, db: number): void
+  setSolo(name: string, soloed: boolean): void
   setMasterDb(db: number): void
   setMuted(muted: boolean): void
+  setRecording(recording: boolean): void
 }
 
 export function usePatchbay(): Patchbay {
@@ -33,7 +35,9 @@ export function usePatchbay(): Patchbay {
     ...snapshot,
     setEnabled: store.setEnabled,
     setChannelDb: store.setChannelDb,
+    setSolo: store.setSolo,
     setMasterDb: store.setMasterDb,
     setMuted: store.setMuted,
+    setRecording: store.setRecording,
   }
 }

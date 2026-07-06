@@ -12,15 +12,16 @@ interface MasterMonitorProps {
   master: MasterState
   onDb(db: number): void
   onMuted(muted: boolean): void
+  onRecording(recording: boolean): void
 }
 
-export function MasterMonitor({ master, onDb, onMuted }: MasterMonitorProps) {
+export function MasterMonitor({ master, onDb, onMuted, onRecording }: MasterMonitorProps) {
   return (
     <section className="master" aria-label="Master monitor">
       <div className="master__head">
         <span className="eyebrow">Master monitor</span>
         <span className="master__count mono">
-          {master.liveCount} live
+          {master.liveCount} live · {master.channelCount} ch
         </span>
       </div>
       <div className="master__controls">
@@ -32,6 +33,17 @@ export function MasterMonitor({ master, onDb, onMuted }: MasterMonitorProps) {
           onClick={() => onMuted(!master.muted)}
         >
           {master.muted ? 'muted' : 'mute'}
+        </button>
+        <button
+          type="button"
+          className="master__rec"
+          data-recording={master.recording}
+          aria-pressed={master.recording}
+          title={master.recording ? 'stop and save WAV' : 'record the monitor to WAV'}
+          onClick={() => onRecording(!master.recording)}
+        >
+          <span className="master__rec-dot" />
+          {master.recording ? 'stop' : 'rec'}
         </button>
         <Meter analyser={master.analyser} label="Master level" />
         <Fader db={master.db} onChange={onDb} label="Master gain" />

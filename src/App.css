@@ -178,6 +178,25 @@
   background: var(--danger);
 }
 
+.strip__solo {
+  flex: none;
+  width: 28px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  border: var(--line-w) solid var(--line);
+  color: var(--haze);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  transition: color var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out),
+    background var(--t-fast) var(--ease-out);
+}
+
+.strip__solo[data-on='true'] {
+  color: var(--arm);
+  border-color: var(--arm);
+  background: color-mix(in srgb, var(--arm) 12%, transparent);
+}
+
 .strip__controls {
   display: flex;
   align-items: center;
@@ -217,6 +236,24 @@
   left: 0;
   background: var(--bone);
   opacity: 0.7;
+}
+
+/* Clip LED at the meter's right end — latched by the rAF loop in <Meter>. */
+.meter__clip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 5px;
+  background: var(--raise);
+  opacity: 0.6;
+  transition: background var(--t-fast) var(--ease-out), opacity var(--t-fast) var(--ease-out);
+}
+
+.meter__clip[data-clip='true'] {
+  background: var(--danger);
+  opacity: 1;
+  box-shadow: 0 0 6px var(--danger);
 }
 
 /* ------------------------------------------------------------------ fader -- */
@@ -372,6 +409,44 @@
   color: var(--danger);
   border-color: var(--danger-dim);
   background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
+.master__rec {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--radius-sm);
+  border: var(--line-w) solid var(--line);
+  color: var(--haze);
+  font-size: var(--fs-sm);
+  transition: color var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out);
+}
+
+.master__rec-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--haze-dim);
+  flex: none;
+}
+
+.master__rec[data-recording='true'] {
+  color: var(--danger);
+  border-color: var(--danger-dim);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
+.master__rec[data-recording='true'] .master__rec-dot {
+  background: var(--danger);
+  animation: rec-blink 1.2s steps(2, jump-none) infinite;
+}
+
+@keyframes rec-blink {
+  50% {
+    opacity: 0.35;
+  }
 }
 
 /* ----------------------------------------------------------- small screens -- */

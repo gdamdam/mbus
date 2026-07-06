@@ -21,6 +21,8 @@ export interface ChannelRow {
   present: boolean
   /** User intent: is this channel patched into the monitor? */
   enabled: boolean
+  /** Solo: when any channel is solo'd, only solo'd channels reach the master. */
+  soloed: boolean
   /** Fader position, in dB. */
   db: number
   /** WebRTC subscription state, or 'idle' when not subscribed. */
@@ -35,4 +37,8 @@ export interface MasterState {
   analyser: AnalyserNode | null
   /** Number of channels currently carrying live audio. */
   liveCount: number
+  /** Number of sources currently advertised in the bridge directory. */
+  channelCount: number
+  /** Whether the monitor is being captured to a WAV right now. */
+  recording: boolean
 }

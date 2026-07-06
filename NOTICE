@@ -24,6 +24,10 @@ author and suite. The following portions are derived from sibling projects:
   manual QA checklist, repository map, Family section) follows the shared
   m-suite README template, of which **mkeys** is the current reference.
 
+* The pure 16-bit PCM WAV encoder (src/patchbay/wav.ts) is adapted from
+  **mtape** (src/recording/wav.ts), trimmed to the 16-bit case for the
+  monitor capture.
+
 The mbus-client library (packages/mbus-client) is original to this repository
 (built in phase 1) and is the seed of a future shared `mcore`; the app consumes
 its public API unmodified.
