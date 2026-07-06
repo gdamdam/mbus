@@ -13,9 +13,10 @@ interface MasterMonitorProps {
   onDb(db: number): void
   onMuted(muted: boolean): void
   onRecording(recording: boolean): void
+  onOutputDevice(deviceId: string): void
 }
 
-export function MasterMonitor({ master, onDb, onMuted, onRecording }: MasterMonitorProps) {
+export function MasterMonitor({ master, onDb, onMuted, onRecording, onOutputDevice }: MasterMonitorProps) {
   return (
     <section className="master" aria-label="Master monitor">
       <div className="master__head">
@@ -47,6 +48,24 @@ export function MasterMonitor({ master, onDb, onMuted, onRecording }: MasterMoni
         </button>
         <Meter analyser={master.analyser} label="Master level" />
         <Fader db={master.db} onChange={onDb} label="Master gain" />
+        {master.canRouteOutput && master.outputDevices.length > 0 && (
+          <select
+            className="master__out mono"
+            value={master.outputDeviceId}
+            aria-label="Monitor output device"
+            title="Route the monitor to an output device (Chromium)"
+            onChange={(e) => onOutputDevice(e.target.value)}
+          >
+            <option value="">system output</option>
+            {master.outputDevices
+              .filter((d) => d.deviceId !== '' && d.deviceId !== 'default')
+              .map((d) => (
+                <option key={d.deviceId} value={d.deviceId}>
+                  {d.label}
+                </option>
+              ))}
+          </select>
+        )}
       </div>
     </section>
   )

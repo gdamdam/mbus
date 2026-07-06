@@ -37,6 +37,7 @@
 - **Graceful without the bridge** — with no link-bridge running, `mbus` shows a clear empty state with a one-line start pointer and keeps retrying in the background; it connects the moment the bridge appears.
 - **Patch memory** — enabled channels, fader positions, and the master fader/mute are remembered per source *name* in `localStorage` and re-applied on load; the first click or keypress resumes audio (autoplay policy) and the saved patch re-wires itself as sources appear.
 - **Solo + clip** — per-channel **solo** (soloing routes everything else out of the master, after the meter tap, so all meters keep moving) and a latching **clip LED** on every meter; the master monitor shows a live/total channel count.
+- **Output-device routing** — a selector on the master monitor routes the mix to any audio output (`AudioContext.setSinkId`, Chromium-only; hidden elsewhere). Session-only — device ids aren't reliable across sessions.
 - **Monitor capture** — record the master monitor and save it as a **16-bit PCM WAV**, entirely in the browser (an `AudioWorklet` tap; nothing is uploaded anywhere).
 - **Peer-to-peer, local-first** — audio is a direct WebRTC connection between browser tabs (host candidates only, no STUN/TURN). No relay, no cloud, no audio ever leaves your machine.
 - **Installable PWA** — offline after one visit, local-first, no account.

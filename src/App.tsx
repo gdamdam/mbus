@@ -24,6 +24,7 @@ export default function App() {
     setMasterDb,
     setMuted,
     setRecording,
+    setOutputDevice,
   } = usePatchbay()
 
   return (
@@ -63,6 +64,7 @@ export default function App() {
           onDb={setMasterDb}
           onMuted={setMuted}
           onRecording={setRecording}
+          onOutputDevice={setOutputDevice}
         />
       </footer>
     </div>

@@ -46,6 +46,14 @@ export interface PatchbayStore {
   setMuted(muted: boolean): void
   /** Capture the master monitor; stopping encodes and downloads a .wav. */
   setRecording(recording: boolean): void
+  /** Route the monitor to an output device ('' = system default). */
+  setOutputDevice(deviceId: string): void
+}
+
+/** One selectable audio output (from enumerateDevices). */
+export interface OutputDevice {
+  deviceId: string
+  label: string
 }
 
 interface ActiveSub {
@@ -66,6 +74,21 @@ export interface PatchbayStoreDeps {
   audio?: PatchbayAudio
   /** Pass null to disable persistence entirely. */
   storage?: PatchStorage | null
+  /** List audio outputs (test seam). Default: navigator.mediaDevices, with
+   *  unlabeled devices (no mic permission granted) given a numbered fallback. */
+  enumerateOutputs?: () => Promise<OutputDevice[]>
+}
+
+async function defaultEnumerateOutputs(): Promise<OutputDevice[]> {
+  if (typeof navigator === 'undefined' || !navigator.mediaDevices?.enumerateDevices) return []
+  try {
+    const all = await navigator.mediaDevices.enumerateDevices()
+    return all
+      .filter((d) => d.kind === 'audiooutput')
+      .map((d, i) => ({ deviceId: d.deviceId, label: d.label || `Output ${i + 1}` }))
+  } catch {
+    return []
+  }
 }
 
 export function createPatchbayStore(deps: PatchbayStoreDeps = {}): PatchbayStore {
@@ -84,6 +107,19 @@ export function createPatchbayStore(deps: PatchbayStoreDeps = {}): PatchbayStore
   let masterDb = 0
   let muted = false
   let recording = false
+  // Output routing (setSinkId) — session-only: device ids are per-origin and
+  // can go stale across sessions, so a persisted choice could silently fail.
+  const enumerateOutputs = deps.enumerateOutputs ?? defaultEnumerateOutputs
+  let outputDeviceId = ''
+  let outputDevices: OutputDevice[] = []
+
+  function refreshOutputs(): void {
+    if (!audio.canSetOutputDevice()) return
+    void enumerateOutputs().then((list) => {
+      outputDevices = list
+      emit()
+    })
+  }
 
   // Seed intent from the saved patch: enables + fader positions come back by
   // name and reconcile re-wires them as their sources (re)appear. Audio still
@@ -141,6 +177,9 @@ export function createPatchbayStore(deps: PatchbayStoreDeps = {}): PatchbayStore
       db: masterDb,
       muted,
       analyser: audio.masterAnalyser(),
+      outputDeviceId,
+      outputDevices,
+      canRouteOutput: audio.canSetOutputDevice(),
       liveCount,
       channelCount: byName.size,
       recording,
@@ -273,6 +312,10 @@ export function createPatchbayStore(deps: PatchbayStoreDeps = {}): PatchbayStore
         emit()
       })
       client.connect()
+      refreshOutputs()
+      if (typeof navigator !== 'undefined' && navigator.mediaDevices?.addEventListener) {
+        navigator.mediaDevices.addEventListener('devicechange', refreshOutputs)
+      }
       // A patch restored from storage cannot sound until a user gesture lets
       // the AudioContext start — the first click/keypress anywhere resumes it
       // and wires up the remembered channels.
@@ -312,6 +355,9 @@ export function createPatchbayStore(deps: PatchbayStoreDeps = {}): PatchbayStore
       recording = false
       recorder?.stop() // discard, don't download — the app is going away
       recorder = null
+      if (typeof navigator !== 'undefined' && navigator.mediaDevices?.removeEventListener) {
+        navigator.mediaDevices.removeEventListener('devicechange', refreshOutputs)
+      }
       client.disconnect()
       audio.close()
     },
@@ -376,5 +422,13 @@ export function createPatchbayStore(deps: PatchbayStoreDeps = {}): PatchbayStore
     },
 
     setRecording: setRecordingImpl,
+
+    setOutputDevice(deviceId): void {
+      outputDeviceId = deviceId
+      void audio.setOutputDevice(deviceId).catch(() => {
+        /* device vanished between enumerate and select — stay on default */
+      })
+      emit()
+    },
   }
 }

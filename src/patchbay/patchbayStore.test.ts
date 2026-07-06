@@ -19,6 +19,8 @@ interface FakeWorld {
   subscribed: string[]
   /** Latest setChannelAudible value per sourceId. */
   audible: Map<string, boolean>
+  /** Device ids passed to audio.setOutputDevice, in order. */
+  sinkCalls: string[]
 }
 
 /** Minimal client + audio doubles: enough surface for the store, no audio. */
@@ -62,6 +64,7 @@ function makeFakes(): FakeWorld {
   let ctxReady = false
 
   const audible = new Map<string, boolean>()
+  const sinkCalls: string[] = []
 
   const audio = {
     async ensureContext() {
@@ -79,6 +82,11 @@ function makeFakes(): FakeWorld {
     masterAnalyser: () => null,
     setMasterGain() {},
     setMuted() {},
+    canSetOutputDevice: () => true,
+    setOutputDevice(deviceId: string) {
+      sinkCalls.push(deviceId)
+      return Promise.resolve()
+    },
     close() {},
   } as unknown as PatchbayAudio
 
@@ -96,6 +104,7 @@ function makeFakes(): FakeWorld {
     },
     subscribed,
     audible,
+    sinkCalls,
   }
 }
 
@@ -286,5 +295,33 @@ describe('patchbayStore persistence', () => {
     const row = store.getSnapshot().channels.find((c) => c.name === 'tone')
     expect(row?.enabled).toBe(false)
     expect(store.getSnapshot().master.db).toBe(0)
+  })
+})
+
+describe('patchbayStore output routing', () => {
+  it('lists devices via the seam and routes the chosen one through the audio layer', async () => {
+    const w = makeFakes()
+    const store = createPatchbayStore({
+      client: w.client,
+      audio: w.audio,
+      storage: null,
+      enumerateOutputs: () =>
+        Promise.resolve([{ deviceId: 'dev-2', label: 'Interface Out' }]),
+    })
+    store.start()
+    await Promise.resolve() // let refreshOutputs' then() run
+    const master = store.getSnapshot().master
+    expect(master.canRouteOutput).toBe(true)
+    expect(master.outputDevices).toEqual([{ deviceId: 'dev-2', label: 'Interface Out' }])
+    expect(master.outputDeviceId).toBe('')
+
+    store.setOutputDevice('dev-2')
+    expect(w.sinkCalls).toEqual(['dev-2'])
+    expect(store.getSnapshot().master.outputDeviceId).toBe('dev-2')
+
+    store.setOutputDevice('')
+    expect(w.sinkCalls).toEqual(['dev-2', ''])
+    expect(store.getSnapshot().master.outputDeviceId).toBe('')
+    store.destroy()
   })
 })

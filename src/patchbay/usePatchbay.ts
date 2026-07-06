@@ -17,6 +17,7 @@ export interface Patchbay extends PatchbaySnapshot {
   setMasterDb(db: number): void
   setMuted(muted: boolean): void
   setRecording(recording: boolean): void
+  setOutputDevice(deviceId: string): void
 }
 
 export function usePatchbay(): Patchbay {
@@ -39,5 +40,6 @@ export function usePatchbay(): Patchbay {
     setMasterDb: store.setMasterDb,
     setMuted: store.setMuted,
     setRecording: store.setRecording,
+    setOutputDevice: store.setOutputDevice,
   }
 }

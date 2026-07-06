@@ -35,6 +35,12 @@ export interface MasterState {
   db: number
   muted: boolean
   analyser: AnalyserNode | null
+  /** Selected output device id ('' = system default). */
+  outputDeviceId: string
+  /** Available outputs (empty until enumerated; populated only when routable). */
+  outputDevices: ReadonlyArray<{ deviceId: string; label: string }>
+  /** True when the browser supports AudioContext.setSinkId (Chromium). */
+  canRouteOutput: boolean
   /** Number of channels currently carrying live audio. */
   liveCount: number
   /** Number of sources currently advertised in the bridge directory. */

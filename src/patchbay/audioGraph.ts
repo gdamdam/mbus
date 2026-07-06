@@ -43,7 +43,22 @@ export interface PatchbayAudio {
   masterBus(): AudioNode | null
   setMasterGain(linear: number): void
   setMuted(muted: boolean): void
+  /** True when this browser can route the context to a chosen output device
+   *  (AudioContext.setSinkId — Chromium). */
+  canSetOutputDevice(): boolean
+  /** Route the monitor to an output device id ('' = system default). The
+   *  choice is remembered and re-applied if the context is created later. */
+  setOutputDevice(deviceId: string): Promise<void>
   close(): void
+}
+
+/** AudioContext.setSinkId is Chromium-only and absent from lib.dom. */
+interface SinkableContext extends AudioContext {
+  setSinkId(id: string): Promise<void>
+}
+
+function supportsSetSinkId(): boolean {
+  return typeof AudioContext !== 'undefined' && 'setSinkId' in AudioContext.prototype
 }
 
 export function createPatchbayAudio(): PatchbayAudio {
@@ -52,6 +67,7 @@ export function createPatchbayAudio(): PatchbayAudio {
   let masterMeter: AnalyserNode | null = null
   let masterLinear = 1
   let muted = false
+  let sinkId = ''
   const channels = new Map<string, ChannelNodes>()
 
   function buildMaster(context: AudioContext): void {
@@ -68,6 +84,11 @@ export function createPatchbayAudio(): PatchbayAudio {
       if (!ctx) {
         ctx = new AudioContext()
         buildMaster(ctx)
+        if (sinkId && supportsSetSinkId()) {
+          void (ctx as SinkableContext).setSinkId(sinkId).catch(() => {
+            /* device unplugged since it was chosen — stay on the default */
+          })
+        }
       }
       if (ctx.state === 'suspended') {
         try {
@@ -132,6 +153,15 @@ export function createPatchbayAudio(): PatchbayAudio {
     setMuted(next): void {
       muted = next
       if (master && ctx) master.gain.setTargetAtTime(next ? 0 : masterLinear, ctx.currentTime, 0.01)
+    },
+
+    canSetOutputDevice: () => supportsSetSinkId(),
+
+    async setOutputDevice(deviceId): Promise<void> {
+      sinkId = deviceId
+      if (ctx && supportsSetSinkId()) {
+        await (ctx as SinkableContext).setSinkId(deviceId)
+      }
     },
 
     close(): void {
