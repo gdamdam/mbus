@@ -12,4 +12,4 @@ node_modules/.tmp/
 # Local working docs — not part of the published repo. The published docs are
 # docs/protocol.md and docs/dsp.md (tracked); these are internal notes/prompts.
 docs/project-knowledge.md
-docs/prompt-build-mbus-phase3-opus.md
+docs/prompt-*.md
