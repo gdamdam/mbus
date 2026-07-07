@@ -318,7 +318,7 @@ describe('publishing', () => {
 })
 
 describe('subscribing', () => {
-  it('requests, answers the offer, and goes live on track arrival', async () => {
+  it('requests, answers the offer, and goes live once the connection is up', async () => {
     const h = makeHarness()
     const g = fakeAudioGraph()
     const s = handshake(h)
@@ -348,7 +348,31 @@ describe('subscribing', () => {
     pc.ontrack?.({ track: g.track, streams: [stream] })
     expect(g.ctx.createMediaStreamSource).toHaveBeenCalledWith(stream)
     expect(g.mediaSource.connect).toHaveBeenCalledWith(g.gain)
+    // Track arrival is only SDP progress — 'live' must wait for the actual
+    // peer connection (ICE can still fail after ontrack, e.g. incognito).
+    expect(states).toEqual([])
+    expect(sub.getState()).toBe('connecting')
+
+    pc.connectionState = 'connected'
+    pc.onconnectionstatechange?.()
     expect(states).toEqual(['live'])
+  })
+
+  it('does not go live on connection alone if no track arrived yet', async () => {
+    const h = makeHarness()
+    const g = fakeAudioGraph()
+    const s = handshake(h)
+    const sub = h.client.subscribe('s5', g.ctx)
+    s.serverSend({ type: 'mbus/signal', from: 'c2', payload: { kind: 'offer', sourceId: 's5', sdp: 'o' } })
+    await tick()
+    const pc = h.pcs[0]!
+
+    pc.connectionState = 'connected'
+    pc.onconnectionstatechange?.()
+    expect(sub.getState()).toBe('connecting')
+
+    pc.ontrack?.({ track: g.track, streams: [{ id: 'remote' } as unknown as MediaStream] })
+    expect(sub.getState()).toBe('live')
   })
 
   it('requests on welcome when subscribed before the bridge connected', () => {

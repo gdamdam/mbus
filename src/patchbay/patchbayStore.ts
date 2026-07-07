@@ -40,6 +40,8 @@ export interface PatchbayStore {
   subscribe(listener: () => void): () => void
   getSnapshot(): PatchbaySnapshot
   setEnabled(name: string, enabled: boolean): void
+  /** Drop a channel from the patch entirely (row + persisted intent). */
+  forget(name: string): void
   setChannelDb(name: string, db: number): void
   setSolo(name: string, soloed: boolean): void
   setMasterDb(db: number): void
@@ -155,6 +157,9 @@ export function createPatchbayStore(deps: PatchbayStoreDeps = {}): PatchbayStore
       const s = byName.get(name) ?? null
       const info = live.get(name) ?? null
       const intent = desired.get(name)
+      // Absent + disabled = a ghost: remembered in storage (its fader comes
+      // back if the source reappears) but not worth a row on screen.
+      if (s === null && !(intent?.enabled ?? false)) continue
       rows.push({
         name,
         sourceId: s?.sourceId ?? info?.sourceId ?? null,
@@ -388,6 +393,16 @@ export function createPatchbayStore(deps: PatchbayStoreDeps = {}): PatchbayStore
       } else {
         reconcileNow()
       }
+      emit()
+    },
+
+    forget(name): void {
+      desired.delete(name)
+      persistNow()
+      // Same courtesy as disable: a solo left on a forgotten channel would
+      // silence the whole monitor.
+      if (soloed.delete(name)) applySolo()
+      reconcileNow()
       emit()
     },
 

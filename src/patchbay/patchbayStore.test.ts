@@ -298,6 +298,85 @@ describe('patchbayStore persistence', () => {
   })
 })
 
+describe('patchbayStore ghost rows', () => {
+  it('hides a row that is absent and disabled (no ghost channels)', async () => {
+    const w = makeFakes()
+    const store = createPatchbayStore({ client: w.client, audio: w.audio, storage: null })
+    store.start()
+    w.pushSources([TONE])
+    store.setEnabled('tone', true)
+    await w.resolveContext()
+
+    store.setEnabled('tone', false)
+    w.pushSources([]) // publisher goes away
+
+    expect(store.getSnapshot().channels.find((c) => c.name === 'tone')).toBeUndefined()
+  })
+
+  it('does not resurrect a disabled entry from storage when its source is absent', () => {
+    const storage = memoryStorage(
+      JSON.stringify({
+        channels: { tone: { enabled: false, db: -9 } },
+        master: { db: 0, muted: false },
+      }),
+    )
+    const w = makeFakes()
+    const store = createPatchbayStore({ client: w.client, audio: w.audio, storage })
+    store.start()
+
+    expect(store.getSnapshot().channels).toEqual([])
+  })
+
+  it('still shows a present source that is disabled', () => {
+    const w = makeFakes()
+    const store = createPatchbayStore({ client: w.client, audio: w.audio, storage: null })
+    store.start()
+    w.pushSources([TONE])
+
+    const row = store.getSnapshot().channels.find((c) => c.name === 'tone')
+    expect(row?.present).toBe(true)
+    expect(row?.enabled).toBe(false)
+  })
+})
+
+describe('patchbayStore forget', () => {
+  it('removes the channel row and its persisted entry', () => {
+    const storage = memoryStorage(
+      JSON.stringify({
+        channels: { tone: { enabled: true, db: -12 } },
+        master: { db: 0, muted: false },
+      }),
+    )
+    const w = makeFakes()
+    const store = createPatchbayStore({ client: w.client, audio: w.audio, storage })
+    store.start()
+    expect(store.getSnapshot().channels).toHaveLength(1) // waiting for publisher
+
+    store.forget('tone')
+
+    expect(store.getSnapshot().channels).toEqual([])
+    const saved = parsePatch(storage.data.get(PATCH_STORAGE_KEY) ?? null)
+    expect(saved?.channels).toEqual({})
+  })
+
+  it('drops the solo of a forgotten channel so the mix is not silenced', async () => {
+    const w = makeFakes()
+    const store = createPatchbayStore({ client: w.client, audio: w.audio, storage: null })
+    store.start()
+    const KEYS: SourceInfo = { sourceId: 's2', name: 'keys', clientId: 'c2' }
+    w.pushSources([TONE, KEYS])
+    store.setEnabled('tone', true)
+    await w.resolveContext()
+    store.setEnabled('keys', true)
+    await w.resolveContext()
+    store.setSolo('tone', true)
+
+    store.forget('tone')
+
+    expect(w.audible.get('s2')).toBe(true)
+  })
+})
+
 describe('patchbayStore output routing', () => {
   it('lists devices via the seam and routes the chosen one through the audio layer', async () => {
     const w = makeFakes()

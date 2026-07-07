@@ -12,6 +12,7 @@ import { createPatchbayStore, type PatchbaySnapshot } from './patchbayStore'
 
 export interface Patchbay extends PatchbaySnapshot {
   setEnabled(name: string, enabled: boolean): void
+  forget(name: string): void
   setChannelDb(name: string, db: number): void
   setSolo(name: string, soloed: boolean): void
   setMasterDb(db: number): void
@@ -35,6 +36,7 @@ export function usePatchbay(): Patchbay {
   return {
     ...snapshot,
     setEnabled: store.setEnabled,
+    forget: store.forget,
     setChannelDb: store.setChannelDb,
     setSolo: store.setSolo,
     setMasterDb: store.setMasterDb,

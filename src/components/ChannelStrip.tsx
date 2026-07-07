@@ -30,9 +30,10 @@ interface ChannelStripProps {
   onToggle(name: string, on: boolean): void
   onDb(name: string, db: number): void
   onSolo(name: string, on: boolean): void
+  onForget(name: string): void
 }
 
-export function ChannelStrip({ row, onToggle, onDb, onSolo }: ChannelStripProps) {
+export function ChannelStrip({ row, onToggle, onDb, onSolo, onForget }: ChannelStripProps) {
   const waiting = row.enabled && !row.present
   const tone = waiting ? 'arm' : STATE_TONE[row.subState]
   const stateLabel = waiting ? 'waiting for publisher' : STATE_LABEL[row.subState]
@@ -67,6 +68,17 @@ export function ChannelStrip({ row, onToggle, onDb, onSolo }: ChannelStripProps)
         >
           S
         </button>
+        {!row.present && (
+          <button
+            type="button"
+            className="strip__forget mono"
+            aria-label={`Forget ${row.name}`}
+            title="forget this channel"
+            onClick={() => onForget(row.name)}
+          >
+            ×
+          </button>
+        )}
       </div>
       <div className="strip__controls">
         <Meter analyser={row.analyser} label={`${row.name} level`} />

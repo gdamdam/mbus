@@ -12,7 +12,7 @@
      └────────────────────────────────────────▶  ▮▮▮▯▯ 🔊
 </pre>
 
-[![version](https://img.shields.io/badge/version-0.2.13-46d6b4)](./package.json)
+[![version](https://img.shields.io/badge/version-0.3.0-46d6b4)](./package.json)
 [![license](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue)](./LICENSE)
 [![tests](https://img.shields.io/badge/tests-52%20passing-2ea043)](#verification)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)](./tsconfig.json)

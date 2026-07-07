@@ -19,6 +19,7 @@ export default function App() {
     channels,
     master,
     setEnabled,
+    forget,
     setChannelDb,
     setSolo,
     setMasterDb,
@@ -52,6 +53,7 @@ export default function App() {
                 onToggle={setEnabled}
                 onDb={setChannelDb}
                 onSolo={setSolo}
+                onForget={forget}
               />
             ))}
           </div>
