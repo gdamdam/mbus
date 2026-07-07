@@ -12,9 +12,9 @@
      └────────────────────────────────────────▶  ▮▮▮▯▯ 🔊
 </pre>
 
-[![version](https://img.shields.io/badge/version-0.2.0-46d6b4)](./package.json)
+[![version](https://img.shields.io/badge/version-0.2.13-46d6b4)](./package.json)
 [![license](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue)](./LICENSE)
-[![tests](https://img.shields.io/badge/tests-51%20passing-2ea043)](#verification)
+[![tests](https://img.shields.io/badge/tests-52%20passing-2ea043)](#verification)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)](./tsconfig.json)
 [![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=white)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-8-646cff?logo=vite&logoColor=white)](https://vite.dev)
@@ -93,7 +93,7 @@ The `mbus-client` library lives in `packages/mbus-client` and has its own gate (
 ## Verification
 
 ```bash
-npm run check   # typecheck + lint + 51 tests + production build
+npm run check   # typecheck + lint + 52 tests + production build
 ```
 
 Tests are deterministic and live next to the code: the dB/level math (`patchbay/level.ts`), the re-wire-by-name **reconciliation** policy (`patchbay/reconcile.ts` — publisher restart, publisher death, duplicate names, enable/disable), the store's enable/solo/persistence sequencing (`patchbay/patchbayStore.ts`, via injected client/audio doubles), the patch (de)serialization (`patchbay/persist.ts`), and the WAV encoder (`patchbay/wav.ts`). Vitest runs in a Node environment, so **live audio and RTC behaviour are covered by a manual QA checklist**, not unit tests:
