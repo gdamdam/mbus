@@ -222,7 +222,7 @@ export function createPatchbayStore(deps: PatchbayStoreDeps = {}): PatchbayStore
             onLimit: () => setRecordingImpl(false),
           })
           if (!recWanted) {
-            r.stop() // stopped while the worklet was loading — discard
+            void r.stop() // stopped while the worklet was loading — discard
             return
           }
           recorder = r
@@ -239,14 +239,15 @@ export function createPatchbayStore(deps: PatchbayStoreDeps = {}): PatchbayStore
       recording = false
       emit()
       if (r) {
-        const channels = r.stop()
-        if ((channels[0]?.length ?? 0) > 0) {
-          const stamp = new Date().toISOString().slice(0, 19).replace(/[:]/g, '-')
-          downloadWav(
-            encodeWav(channels, { sampleRate: Math.round(r.sampleRate) }),
-            `mbus-monitor-${stamp}.wav`,
-          )
-        }
+        void r.stop().then((channels) => {
+          if ((channels[0]?.length ?? 0) > 0) {
+            const stamp = new Date().toISOString().slice(0, 19).replace(/[:]/g, '-')
+            downloadWav(
+              encodeWav(channels, { sampleRate: Math.round(r.sampleRate) }),
+              `mbus-monitor-${stamp}.wav`,
+            )
+          }
+        })
       }
     }
   }
@@ -358,7 +359,7 @@ export function createPatchbayStore(deps: PatchbayStoreDeps = {}): PatchbayStore
       live.clear()
       recWanted = false
       recording = false
-      recorder?.stop() // discard, don't download — the app is going away
+      void recorder?.stop() // discard, don't download — the app is going away
       recorder = null
       if (typeof navigator !== 'undefined' && navigator.mediaDevices?.removeEventListener) {
         navigator.mediaDevices.removeEventListener('devicechange', refreshOutputs)
