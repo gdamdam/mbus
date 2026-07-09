@@ -24,6 +24,9 @@ interface ChannelNodes {
   analyser: AnalyserNode
   /** Post-meter on/off stage (solo policy) — meters stay live while routed out. */
   route: GainNode
+  /** The subscription's node feeding this channel — addChannel wired its edge
+   *  into `gain`, so removeChannel severs it too. */
+  node: AudioNode
 }
 
 export interface PatchbayAudio {
@@ -114,7 +117,7 @@ export function createPatchbayAudio(): PatchbayAudio {
       gain.connect(analyser)
       gain.connect(route)
       route.connect(master)
-      channels.set(sourceId, { gain, analyser, route })
+      channels.set(sourceId, { gain, analyser, route, node })
       return analyser
     },
 
@@ -122,6 +125,7 @@ export function createPatchbayAudio(): PatchbayAudio {
       const ch = channels.get(sourceId)
       if (!ch) return
       try {
+        ch.node.disconnect(ch.gain)
         ch.gain.disconnect()
         ch.analyser.disconnect()
         ch.route.disconnect()

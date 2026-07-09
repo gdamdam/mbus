@@ -16,6 +16,8 @@ interface FakeWorld {
   audio: PatchbayAudio
   pushSources(sources: SourceInfo[]): void
   resolveContext(): Promise<void>
+  /** Drive the store's subscription for a sourceId to a terminal state. */
+  pushSubState(sourceId: string, state: 'failed' | 'closed'): void
   subscribed: string[]
   /** Latest setChannelAudible value per sourceId. */
   audible: Map<string, boolean>
@@ -27,6 +29,9 @@ interface FakeWorld {
 function makeFakes(): FakeWorld {
   const sourceListeners: Array<(s: SourceInfo[]) => void> = []
   const subscribed: string[] = []
+  // Latest state listener per sourceId — the store registers a fresh one on
+  // every (re)subscribe, so this holds the current subscription's callback.
+  const subStateListeners = new Map<string, (s: string) => void>()
 
   const client = {
     connect() {},
@@ -48,7 +53,12 @@ function makeFakes(): FakeWorld {
         sourceId,
         node: {} as AudioNode,
         getState: () => 'connecting' as const,
-        onState: () => () => {},
+        onState(cb: (s: string) => void) {
+          subStateListeners.set(sourceId, cb)
+          return () => {
+            if (subStateListeners.get(sourceId) === cb) subStateListeners.delete(sourceId)
+          }
+        },
         close() {},
       }
     },
@@ -102,6 +112,9 @@ function makeFakes(): FakeWorld {
       await Promise.resolve()
       await Promise.resolve()
     },
+    pushSubState(sourceId, state) {
+      subStateListeners.get(sourceId)?.(state)
+    },
     subscribed,
     audible,
     sinkCalls,
@@ -144,6 +157,25 @@ describe('patchbayStore setEnabled', () => {
     await w.resolveContext()
 
     expect(w.subscribed).toEqual(['s1'])
+    const row = store.getSnapshot().channels.find((c) => c.name === 'tone')
+    expect(row?.subState).toBe('connecting')
+  })
+
+  it('re-subscribes when a still-advertised source fails (transient drop)', async () => {
+    const w = makeFakes()
+    const store = createPatchbayStore({ client: w.client, audio: w.audio, storage: null })
+    store.start()
+    w.pushSources([TONE])
+
+    store.setEnabled('tone', true)
+    await w.resolveContext()
+    expect(w.subscribed).toEqual(['s1'])
+
+    // The connection drops but the publisher is still in the directory: the
+    // store should tear down and re-wire, not go silent forever.
+    w.pushSubState('s1', 'failed')
+
+    expect(w.subscribed).toEqual(['s1', 's1'])
     const row = store.getSnapshot().channels.find((c) => c.name === 'tone')
     expect(row?.subState).toBe('connecting')
   })

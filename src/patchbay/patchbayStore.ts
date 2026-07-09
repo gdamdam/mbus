@@ -288,8 +288,17 @@ export function createPatchbayStore(deps: PatchbayStoreDeps = {}): PatchbayStore
             live.set(s.name, { ...existing, subState })
           }
           if (subState === 'failed' || subState === 'closed') {
+            // The client fails a subscription terminally — it never retries
+            // (see failSubscription in mbus-client). Tear the channel down
+            // fully (drop the listener + the live row, not just active/audio),
+            // then reconcile: if the source is still advertised and wanted this
+            // re-subscribes with a fresh connection, recovering a transient drop
+            // instead of leaving a still-present source silent indefinitely.
+            unsub()
             active.delete(s.sourceId)
             audio.removeChannel(s.sourceId)
+            dropLiveBySourceId(s.sourceId)
+            reconcileNow()
           }
           emit()
         })
