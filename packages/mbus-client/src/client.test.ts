@@ -212,7 +212,9 @@ describe('connection lifecycle', () => {
     await tick()
     h.client.disconnect()
     expect(h.client.getState()).toBe('idle')
-    expect(sub.getState()).toBe('failed')
+    // Intent survives the drop: the sub resets to 'connecting' so a later
+    // reconnect re-subscribes automatically ('failed' is terminal-only).
+    expect(sub.getState()).toBe('connecting')
     expect(h.pcs[0]!.closed).toBe(true)
   })
 })
