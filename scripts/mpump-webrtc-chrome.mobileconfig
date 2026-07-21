@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>PayloadContent</key>
+  <array>
+    <dict>
+      <key>PayloadType</key>
+      <string>com.google.Chrome</string>
+      <key>PayloadIdentifier</key>
+      <string>live.mpump.webrtc.chrome</string>
+      <key>PayloadUUID</key>
+      <string>7A2B3C4D-5E6F-7081-92A3-B4C5D6E7F809</string>
+      <key>PayloadVersion</key>
+      <integer>2</integer>
+      <key>PayloadEnabled</key>
+      <true/>
+      <key>PayloadDisplayName</key>
+      <string>m-suite WebRTC local IPs (Chrome)</string>
+      <!-- Mandatory policy: expose real local IPs ONLY to these origins so mbus
+           audio routing can connect. Every other site keeps mDNS privacy. -->
+      <key>WebRtcLocalIpsAllowedUrls</key>
+      <array>
+        <string>https://*.mpump.live</string>
+        <string>https://mpump.live</string>
+        <string>localhost</string>
+        <string>127.0.0.1</string>
+      </array>
+    </dict>
+  </array>
+  <key>PayloadType</key>
+  <string>Configuration</string>
+  <key>PayloadIdentifier</key>
+  <string>live.mpump.webrtc</string>
+  <key>PayloadUUID</key>
+  <string>6F1E2D3C-4B5A-6978-8A9B-0C1D2E3F4A5B</string>
+  <key>PayloadVersion</key>
+  <integer>2</integer>
+  <key>PayloadScope</key>
+  <string>System</string>
+  <key>PayloadDisplayName</key>
+  <string>m-suite WebRTC local IP allowlist</string>
+  <key>PayloadDescription</key>
+  <string>Lets mbus audio routing connect by exposing local IPs to *.mpump.live and localhost only. Scoped — all other sites keep full WebRTC mDNS privacy. Remove any time from System Settings › General › Device Management.</string>
+  <key>PayloadOrganization</key>
+  <string>m-suite</string>
+</dict>
+</plist>

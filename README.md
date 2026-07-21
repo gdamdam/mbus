@@ -122,6 +122,7 @@ These are **measured on this project's hardware** (Chromium 149, macOS/Apple sil
 - **Localhost / LAN only.** Host ICE candidates only, no STUN/TURN — correct for same-machine and LAN, out of scope beyond that. No remote relay.
 - **Safari** blocks all loopback `ws://` from an HTTPS page, so the hosted app cannot reach a local bridge from Safari yet (a bridge-served `wss://` is a deferred future). **Firefox** only exempts the `localhost` hostname (not `127.0.0.1`) from mixed-content blocking — the client tries `localhost` first for this reason. **Chromium** accepts all loopback variants.
 - Audio starts on the first user gesture (enabling a channel), per browser autoplay policy.
+- **One-time local-IP setup.** Because the apps live on different subdomains, browsers' default mDNS masking of local IPs stops the cross-origin peer connection from forming — the channel gets stuck on "connecting". A one-time, per-origin browser policy fixes it while keeping mDNS privacy everywhere else: see [`docs/webrtc-local-ip-setup.md`](./docs/webrtc-local-ip-setup.md) (or run `npm run setup:webrtc`).
 
 ## Privacy
 

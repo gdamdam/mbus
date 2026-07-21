@@ -491,3 +491,107 @@
     flex-wrap: wrap;
   }
 }
+
+/* ── Setup help modal ─────────────────────────────────────────────────────── */
+.modal-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-4);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
+}
+
+.modal {
+  width: 100%;
+  max-width: 460px;
+  max-height: calc(100dvh - 2 * var(--sp-4));
+  overflow-y: auto;
+  padding: var(--sp-5);
+  background: var(--slate-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-2);
+}
+
+.modal__title {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-title);
+}
+
+.modal__body {
+  margin: 0 0 var(--sp-4);
+  color: var(--haze);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
+.modal__body strong {
+  color: var(--bone);
+}
+
+.modal__fix {
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--raise);
+  border-radius: var(--radius-sm);
+}
+
+.modal__fix-head {
+  margin: 0 0 var(--sp-2);
+  color: var(--live);
+  font-size: var(--fs-sm);
+}
+
+.modal__steps {
+  margin: 0;
+  padding-left: var(--sp-4);
+  color: var(--bone);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-body);
+}
+
+.modal__steps li + li {
+  margin-top: var(--sp-2);
+}
+
+.modal__note {
+  margin: var(--sp-4) 0 0;
+  color: var(--haze-dim);
+  font-size: var(--fs-xs);
+  line-height: var(--lh-snug);
+}
+
+.modal__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-top: var(--sp-5);
+}
+
+.modal__dismiss {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--haze);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.modal__close {
+  padding: var(--sp-2) var(--sp-4);
+  background: var(--live);
+  color: var(--ink);
+  border: none;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-ui);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modal__close:hover {
+  background: color-mix(in srgb, var(--live) 88%, white);
+}
