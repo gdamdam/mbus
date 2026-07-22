@@ -360,6 +360,36 @@ describe('subscribing', () => {
     expect(states).toEqual(['live'])
   })
 
+  it('minimizes the receiver jitter buffer for low-latency loopback playout', async () => {
+    const h = makeHarness()
+    const g = fakeAudioGraph()
+    const s = handshake(h)
+    h.client.subscribe('s5', g.ctx)
+    s.serverSend({ type: 'mbus/signal', from: 'c2', payload: { kind: 'offer', sourceId: 's5', sdp: 'o' } })
+    await tick()
+    const pc = h.pcs[0]!
+    // Real ontrack events carry the RTCRtpReceiver; the client should pin its
+    // playout target to the minimum (loopback/LAN has ~no jitter to absorb).
+    const receiver = { jitterBufferTarget: 200 as number | null, playoutDelayHint: 0.2 }
+    pc.ontrack?.({ track: g.track, streams: [{ id: 'remote' } as unknown as MediaStream], receiver })
+    expect(receiver.jitterBufferTarget).toBe(0)
+    expect(receiver.playoutDelayHint).toBe(0)
+  })
+
+  it('tolerates an ontrack event with no receiver', async () => {
+    const h = makeHarness()
+    const g = fakeAudioGraph()
+    const s = handshake(h)
+    const sub = h.client.subscribe('s5', g.ctx)
+    s.serverSend({ type: 'mbus/signal', from: 'c2', payload: { kind: 'offer', sourceId: 's5', sdp: 'o' } })
+    await tick()
+    const pc = h.pcs[0]!
+    expect(() =>
+      pc.ontrack?.({ track: g.track, streams: [{ id: 'remote' } as unknown as MediaStream] }),
+    ).not.toThrow()
+    expect(sub.getState()).toBe('connecting')
+  })
+
   it('does not go live on connection alone if no track arrived yet', async () => {
     const h = makeHarness()
     const g = fakeAudioGraph()
